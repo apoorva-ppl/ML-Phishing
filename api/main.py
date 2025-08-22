@@ -1,55 +1,40 @@
 
 
-from fastapi import FastAPI, File, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
+from flask import Flask, request, render_template
+import joblib
 import numpy as np
-from io import BytesIO
-from PIL import Image
-import tensorflow as tf
+import sys
+import os
 
-app = FastAPI()
+# This is important to find your feature_extractor.py file
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from feature_extractor import extract_features
 
-origins = [
-    "http://localhost",
-    "http://localhost:3000",
-]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app = Flask(__name__, template_folder='../frontend/templates')
 
-MODEL = tf.keras.models.load_model("../saved_models/1")
+# Load your trained phishing model
+model = joblib.load('../phishing_detector.pkl')
 
-CLASS_NAMES = ["Early Blight", "Late Blight", "Healthy"]
+@app.route('/')
+def home():
+    return render_template('index.html')
 
-@app.get("/ping")
-async def ping():
-    return "Hello, I am alive"
+@app.route('/predict', methods=['POST'])
+def predict():
+    if request.method == 'POST':
+        url = request.form['url']
 
-def read_file_as_image(data) -> np.ndarray:
-    image = np.array(Image.open(BytesIO(data)))
-    return image
+        # Extract features and reshape for the model
+        url_features = np.array(extract_features(url)).reshape(1, -1)
 
-@app.post("/predict")
-async def predict(
-    file: UploadFile = File(...)
-):
-    image = read_file_as_image(await file.read())
-    img_batch = np.expand_dims(image, 0)
-    
-    predictions = MODEL.predict(img_batch)
+        # Make a prediction
+        prediction = model.predict(url_features)
 
-    predicted_class = CLASS_NAMES[np.argmax(predictions[0])]
-    confidence = np.max(predictions[0])
-    return {
-        'class': predicted_class,
-        'confidence': float(confidence)
-    }
+        # Interpret the result
+        result = "Malicious URL (Phishing)" if prediction[0] == 1 else "Safe URL (Benign)"
 
-if __name__ == "__main__":
-    uvicorn.run(app, host='localhost', port=8000)
+        return render_template('index.html', prediction_text=result, url_checked=url)
+    return render_template('index.html')
 
+if __name__ == '__main__':
+    app.run(debug=True)
