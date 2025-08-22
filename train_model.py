@@ -14,7 +14,8 @@ X_urls = df['URL']
 y = df['CLASS_LABEL']
 
 print("Extracting features...")
-feature_list = df['url'].apply(extract_features)
+# NEW UPDATED LINE
+feature_list = X_urls.apply(extract_features)
 X = pd.DataFrame(feature_list)
 y = df['label']
 
