@@ -1,23 +1,24 @@
+# In train_model.py
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from xgboost import XGBClassifier
 import joblib
-from feature_extractor import extract_features
 
-print("Loading data...")
-# Make sure your CSV has 'url' and 'label' columns
-# NEW UPDATED LINES
+print("Loading pre-featured data...")
+# Load the dataset with all its features
 df = pd.read_csv('Phishing_Legitimate_full.csv')
-# The new dataset uses 1 for phishing, 0 for legitimate, so we don't need to convert it!
-# We just need to select the right columns.
-X_urls = df['URL'] 
+
+# --- This is the new, simpler logic ---
+
+# The 'CLASS_LABEL' column is our target (y)
 y = df['CLASS_LABEL']
 
-print("Extracting features...")
-# NEW UPDATED LINE
-feature_list = X_urls.apply(extract_features)
-X = pd.DataFrame(feature_list)
-y = df['label']
+# All other columns are our features (X). We drop the label column to get them.
+X = df.drop('CLASS_LABEL', axis=1)
+
+# --- The rest of the script is the same ---
+
+print(f"Data loaded. Found {X.shape[1]} features.")
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
