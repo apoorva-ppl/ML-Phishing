@@ -6,10 +6,12 @@ from feature_extractor import extract_features
 
 print("Loading data...")
 # Make sure your CSV has 'url' and 'label' columns
-df = pd.read_csv('phishing.csv')
-
-# Convert labels: 'bad'/'phishing' -> 1, 'good'/'benign' -> 0
-df['label'] = df['label'].apply(lambda x: 1 if x == 'bad' else 0)
+# NEW UPDATED LINES
+df = pd.read_csv('Phishing_Legitimate_full.csv')
+# The new dataset uses 1 for phishing, 0 for legitimate, so we don't need to convert it!
+# We just need to select the right columns.
+X_urls = df['URL'] 
+y = df['CLASS_LABEL']
 
 print("Extracting features...")
 feature_list = df['url'].apply(extract_features)
